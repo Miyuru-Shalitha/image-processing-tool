@@ -1,19 +1,24 @@
 import pygame
 import sys
+import time
 import imgui
+import image_processor
+import glm
 import numpy as np
+import asset_manager
 from imgui.integrations.pygame import PygameRenderer
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader 
 from shaders import vertex_shader_source, fragment_shader_source
+from tkinter import filedialog
 
 
 vertices = np.array([
     # Positions       # Texture coords
     0.5, 0.5, 0.0,     1.0,  1.0,  # Top right
     0.5, -0.5, 0.0,    1.0,  0.0,  # Bottom right
-    -0.5, -0.5, 0.0,   0.0, -1.0,  # Bottom left
-    -0.5, 0.5, 0.0,   -1.0, -1.0   # Top left
+    -0.5, -0.5, 0.0,   0.0, 0.0,  # Bottom left
+    -0.5, 0.5, 0.0,    0.0, 1.0   # Top left
 ], dtype='float32')
 
 indices = np.array([
@@ -61,29 +66,141 @@ def main():
 
     running = True
 
+    selected_texture_id = -1
+    mouse_prev_position = glm.vec2(0.0, 0.0)
+    mouse_flag = True
+    mouse_sensitivity = 5.0
+    mouse_scroll_sensitivity = 50.0
+    
+    camera_position = glm.vec3(0.0, 0.0, -3.0)
+
+    prev_time = time.time()
+
+
     while running:
+        current_time = time.time()
+        dt = current_time - prev_time
+        prev_time = current_time
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             
             renderer.process_event(event)
 
+        if io.mouse_down[1]:
+            for texture in asset_manager.textures:
+                mouse_current_position = glm.vec2(io.mouse_pos.x, io.mouse_pos.y)
+                mouse_position_delta = mouse_current_position - mouse_prev_position
+                mouse_prev_position = mouse_current_position
+
+                if not mouse_flag:
+                    mouse_flag = True
+                    camera_position += glm.vec3(mouse_position_delta.x, -mouse_position_delta.y, 0.0) * dt * mouse_sensitivity
+
+                mouse_flag = False
+        else:
+            mouse_flag = True
+            mouse_current_position = glm.vec2(0.0, 0.0)
+        
+        if io.mouse_wheel != 0:
+            camera_position.z += io.mouse_wheel * dt * mouse_scroll_sensitivity
+
+        window_size = pygame.display.get_window_size()
+        glViewport(0, 0, window_size[0], window_size[1])
         glClearColor(0.3, 0.3, 0.3, 1.0)
         glClear(GL_COLOR_BUFFER_BIT)
 
-        glUseProgram(shader_program)
-        glBindVertexArray(vertex_array)
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
-        glBindVertexArray(0)
-        glUseProgram(0)
+        view = glm.mat4(1.0)
+        view = glm.translate(view, camera_position)
+        projection = glm.perspective(45.0, window_size[0] / window_size[1], 0.1, 100.0)
+
+        for texture in asset_manager.textures:
+            glUseProgram(shader_program)
+            
+            model = glm.mat4(1.0)
+            model = glm.translate(model, glm.vec3(texture.position, 0.0))
+            model = glm.scale(
+                model, 
+                glm.vec3(
+                    asset_manager.get_texture_width(texture.id) / 1000.0, 
+                    asset_manager.get_texture_height(texture.id) / 1000.0, 
+                    0.0
+                )
+            )
+            
+            model_location = glGetUniformLocation(shader_program, "model")
+            view_location = glGetUniformLocation(shader_program, "view")
+            projection_location = glGetUniformLocation(shader_program, "projection")
+            texture_location = glGetUniformLocation(shader_program, "diffuse")
+            
+            glUniformMatrix4fv(model_location, 1, GL_FALSE, glm.value_ptr(model))
+            glUniformMatrix4fv(view_location, 1, GL_FALSE, glm.value_ptr(view))
+            glUniformMatrix4fv(projection_location, 1, GL_FALSE, glm.value_ptr(projection))
+            glActiveTexture(GL_TEXTURE0)
+            glBindTexture(GL_TEXTURE_2D, texture.id)
+            glUniform1i(texture_location, 0)
+
+            glBindVertexArray(vertex_array)
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
+            glBindVertexArray(0)
+            glUseProgram(0)
 
         io.display_size = pygame.display.get_window_size()
         renderer.process_inputs()
         imgui.new_frame()
 
-        imgui.begin("Inspector")
-        imgui.button("Click")
+        ########## Item list window begin ##########
+        imgui.begin("Item List Window")
+
+        for texture in asset_manager.textures:
+            _, is_selected = imgui.selectable(texture.name, texture.id == selected_texture_id)
+
+            if is_selected:
+                selected_texture_id = texture.id
+
+
+        if imgui.button("Add Image"):
+            file_path = filedialog.askopenfilename()
+
+            if file_path:
+                texture_data, width, height = asset_manager.load_image(file_path)
+                texture = asset_manager.create_texture(file_path.split('/')[-1], texture_data, width, height)
+                asset_manager.textures.append(texture)
+
         imgui.end()
+        ########### Item list window end ###########
+
+        ########## Inspector window begin ##########
+        imgui.begin("Inspector Window")
+        for texture in asset_manager.textures:
+            if texture.id == selected_texture_id:
+                if imgui.tree_node("Image", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
+                    if imgui.begin_table("Image", 2):
+                        # Row - 1
+                        imgui.table_next_row()
+
+                        imgui.table_next_column()
+                        imgui.text("Header 0")
+                        
+                        imgui.table_next_column()
+                        imgui.text("Header 1")
+
+                        # Row - 2
+                        imgui.table_next_row()
+
+                        imgui.table_next_column()
+                        imgui.text("Position")
+                        
+                        imgui.table_next_column()
+                        _, (texture.position.x, texture.position.y) = imgui.drag_float2("##Position", texture.position.x, texture.position.y)
+                        
+                        imgui.end_table()
+
+                    imgui.tree_pop()
+
+        imgui.end()
+        ########### Inspector window end ###########
 
         imgui.render()
         renderer.render(imgui.get_draw_data())

@@ -6,8 +6,12 @@ layout (location=1) in vec2 tex_coords;
 
 out vec2 v_tex_coords;
 
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
 void main() {
-    gl_Position = vec4(position, 1.0);
+    gl_Position = projection * view * model * vec4(position, 1.0);
     v_tex_coords = tex_coords;
 }
 """
@@ -19,7 +23,9 @@ in vec2 v_tex_coords;
 
 out vec4 frag_color;
 
+uniform sampler2D diffuse;
+
 void main() {
-    frag_color = vec4(1.0, 1.0, 0.0, 1.0);
+    frag_color = texture(diffuse, v_tex_coords);
 }
 """
