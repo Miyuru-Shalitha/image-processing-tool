@@ -1,21 +1,43 @@
 import pygame
 import glm
 from OpenGL.GL import *
+from enum import Enum
+
+
+class ComponentType(Enum):
+    COLOR_MANIPULATOR_COMPONENT = 0,
+    IMAGE_TRANSFORM_COMPONENT = 1
+
+
+class Entity:
+    def __init__(self, id):
+        self.id = id
+        self.components: list[ComponentType] = []
 
 
 class Texture:
-    def __init__(self, name, id, data, number_of_channels):
+    def __init__(self, name, id, entity_handle, data, number_of_channels):
         self.name = name
         self.id = id
+        self.entity_handle = entity_handle
         self.data = data
         self.number_of_channels = number_of_channels
         self.position = glm.vec2(0.0, 0.0)
 
 
+entity_handle_accumilator = -1
+entities: list[Entity] = []
 textures: list[Texture] = []
 
 
-def create_texture(name, data, width, height, number_of_channels):
+def create_entity():
+    global entity_handle_accumilator
+
+    entity_handle_accumilator += 1
+    return Entity(entity_handle_accumilator)
+
+
+def create_texture(name, entity_handle, data, width, height, number_of_channels) -> Texture:
     global entity_handle_accumilator
 
     if number_of_channels == 1:
@@ -35,7 +57,11 @@ def create_texture(name, data, width, height, number_of_channels):
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data)
     glGenerateMipmap(GL_TEXTURE_2D)
 
-    return Texture(name, texture_id, data, 3)
+    return Texture(name, texture_id, entity_handle, data, 3)
+
+
+def get_textures(entity_handle) -> list[Texture]:
+    return [texture for texture in textures if texture.entity_handle == entity_handle]
 
 
 def get_texture_width(texture_id):
