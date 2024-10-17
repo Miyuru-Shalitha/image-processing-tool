@@ -15,14 +15,24 @@ class Texture:
 textures: list[Texture] = []
 
 
-def create_texture(name, data, width, height):
+def create_texture(name, data, width, height, number_of_channels):
     global entity_handle_accumilator
+
+    if number_of_channels == 1:
+        format = GL_RED
+    elif number_of_channels == 3:
+        format = GL_RGB
+    elif number_of_channels == 4:
+        format = GL_RGBA
+    else:
+        # TODO(Miyuru): Handle error
+        pass
 
     texture_id = glGenTextures(1)
     glBindTexture(GL_TEXTURE_2D, texture_id)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data)
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data)
     glGenerateMipmap(GL_TEXTURE_2D)
 
     return Texture(name, texture_id, data, 3)

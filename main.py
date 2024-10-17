@@ -14,11 +14,11 @@ from tkinter import filedialog
 
 
 vertices = np.array([
-    # Positions       # Texture coords
-    0.5, 0.5, 0.0,     1.0,  1.0,  # Top right
-    0.5, -0.5, 0.0,    1.0,  0.0,  # Bottom right
-    -0.5, -0.5, 0.0,   0.0, 0.0,  # Bottom left
-    -0.5, 0.5, 0.0,    0.0, 1.0   # Top left
+    # Positions       # UV coords
+     0.5,  0.5, 0.0,  1.0, 1.0,  # Top right
+     0.5, -0.5, 0.0,  1.0, 0.0,  # Bottom right
+    -0.5, -0.5, 0.0,  0.0, 0.0,  # Bottom left
+    -0.5,  0.5, 0.0,  0.0, 1.0   # Top left
 ], dtype='float32')
 
 indices = np.array([
@@ -75,6 +75,8 @@ def main():
     camera_position = glm.vec3(0.0, 0.0, -3.0)
 
     prev_time = time.time()
+
+    image_manipulator_color_mode_current_index = 0
 
 
     while running:
@@ -165,7 +167,7 @@ def main():
 
             if file_path:
                 texture_data, width, height = asset_manager.load_image(file_path)
-                texture = asset_manager.create_texture(file_path.split('/')[-1], texture_data, width, height)
+                texture = asset_manager.create_texture(file_path.split('/')[-1], texture_data, width, height, 3)
                 asset_manager.textures.append(texture)
 
         imgui.end()
@@ -195,6 +197,37 @@ def main():
                         imgui.table_next_column()
                         _, (texture.position.x, texture.position.y) = imgui.drag_float2("##Position", texture.position.x, texture.position.y)
                         
+                        imgui.end_table()
+
+                    imgui.tree_pop()
+            
+                if imgui.tree_node("Color Manipulator", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
+                    if imgui.begin_table("Color Manipulator", 2):
+                        # Row - 1
+                        imgui.table_next_row()
+
+                        imgui.table_next_column()
+                        imgui.text("Color mode")
+
+                        imgui.table_next_column()
+                        is_clicked, image_manipulator_color_mode_current_index = imgui.combo("##Color mode", image_manipulator_color_mode_current_index, ["Original", "Black and white"])
+
+                        if is_clicked:
+                            gray_image_data = image_processor.change_color_mode(
+                                texture.data, 
+                                asset_manager.get_texture_width(texture.id),
+                                asset_manager.get_texture_height(texture.id),
+                                image_processor.ColorMode.BW
+                            )
+                            gray_texture = asset_manager.create_texture(
+                                f"{texture.name} (BW)", 
+                                gray_image_data, 
+                                asset_manager.get_texture_width(texture.id), # Same width as the original texture
+                                asset_manager.get_texture_height(texture.id), # Same height as the original texture
+                                1
+                            )
+                            asset_manager.textures.append(gray_texture)
+
                         imgui.end_table()
 
                     imgui.tree_pop()
