@@ -1,6 +1,6 @@
 import glm
 import asset_manager
-from OpenGL import GL
+import image_processor
 
 
 class Entity:
@@ -18,6 +18,7 @@ class TextureComponent:
     def __init__(self, entity_handle: int) -> None:
         self.entity_handle: int = entity_handle
         self.textures: list[asset_manager.Texture] = []
+        self.texture_operations: list[image_processor.Operation] = []
 
 
 class ColorManipulatorComponent:
@@ -56,10 +57,24 @@ def add_transform_component(entity_handle: int) -> TransformComponent:
 
 
 def add_texture_component(entity_handle: int) -> TextureComponent:
-    texture = TextureComponent(entity_handle)
-    texture_components.append(texture)
+    texture_component = TextureComponent(entity_handle)
+    texture_components.append(texture_component)
 
-    return texture
+    return texture_component
+
+
+def add_image_transform_component(entity_handle: int) -> ImageTransformComponent:
+    image_transform_component = ImageTransformComponent(entity_handle)
+    image_transform_components.append(image_transform_component)
+
+    return image_transform_component
+
+
+def add_color_manipulator_component(entity_handle: int) -> ColorManipulatorComponent:
+    color_manipulator_component = ColorManipulatorComponent(entity_handle)
+    color_manipulator_components.append(color_manipulator_component)
+
+    return color_manipulator_component
 
 
 def get_transform_component(entity_handle: int) -> TransformComponent | None:

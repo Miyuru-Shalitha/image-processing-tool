@@ -78,9 +78,12 @@ def main():
     prev_time = time.time()
 
     image_manipulator_color_mode_current_index = 0
-    image_manipulator_color_modes = ["Original", "Black and white"]
+    image_manipulator_color_modes = ["Original", "Gray scale"]
 
     image_transform_rotation = 0
+
+    image_flip_vertically_checked = False
+    image_flip_horizontally_checked = False
 
 
     while running:
@@ -192,138 +195,209 @@ def main():
         ########### Item list window end ###########
 
         ########## Inspector window begin ##########
-        # imgui.begin("Inspector Window")
-        # for entity in ecs.entities:
-        #     if entity.id == selected_entity_handle:
-        #         texture_component: ecs.TextureComponent = ecs.get_texture_component(entity.id)
-        #         image: asset_manager.Image = texture_component.images[-1]
+        imgui.begin("Inspector Window")
+        for entity in ecs.entities:
+            if entity.id == selected_entity_handle:
+                transform_component: ecs.TransformComponent = ecs.get_transform_component(entity.id)
+                texture_component: ecs.TextureComponent = ecs.get_texture_component(entity.id)
+                last_texture: asset_manager.Texture = texture_component.textures[-1]
 
-        #         if imgui.tree_node("Image", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
-        #             if imgui.begin_table("Image", 2):
-        #                 # Row - 1
-        #                 imgui.table_next_row()
+                if imgui.tree_node("Image", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
+                    if imgui.begin_table("Image", 2):
+                        # Row - 1
+                        imgui.table_next_row()
 
-        #                 imgui.table_next_column()
-        #                 imgui.text("Header 0")
+                        imgui.table_next_column()
+                        imgui.text("Header 0")
                         
-        #                 imgui.table_next_column()
-        #                 imgui.text("Header 1")
+                        imgui.table_next_column()
+                        imgui.text("Header 1")
 
-        #                 # Row - 2
-        #                 imgui.table_next_row()
+                        # Row - 2
+                        imgui.table_next_row()
 
-        #                 imgui.table_next_column()
-        #                 imgui.text("Position")
+                        imgui.table_next_column()
+                        imgui.text("Position")
                         
-        #                 imgui.table_next_column()
-        #                 _, (texture.position.x, texture.position.y) = imgui.drag_float2("##Position", texture.position.x, texture.position.y)
+                        imgui.table_next_column()
+                        _, (transform_component.position.x, transform_component.position.y) = imgui.drag_float2(
+                            "##Position", 
+                            transform_component.position.x, 
+                            transform_component.position.y
+                        )
                         
-        #                 imgui.end_table()
+                        imgui.end_table()
 
-        #             imgui.tree_pop()
+                    imgui.tree_pop()
             
-        #         if (asset_manager.ComponentType.COLOR_MANIPULATOR_COMPONENT in entity.components) and \
-        #             imgui.tree_node("Color Manipulator", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
-        #             if imgui.begin_table("Color Manipulator", 2):
-        #                 # Row - 1
-        #                 imgui.table_next_row()
+                if  ecs.get_color_manipulator_component(entity.id) is not None and \
+                    imgui.tree_node("Color Manipulator", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
+                    if imgui.begin_table("Color Manipulator", 2):
+                        # Row - 1
+                        imgui.table_next_row()
 
-        #                 imgui.table_next_column()
-        #                 imgui.text("Color mode")
+                        imgui.table_next_column()
+                        imgui.text("Color mode")
 
-        #                 imgui.table_next_column()
-        #                 is_clicked, image_manipulator_color_mode_current_index = imgui.combo("##Color mode", image_manipulator_color_mode_current_index, image_manipulator_color_modes)
+                        imgui.table_next_column()
+                        is_clicked, image_manipulator_color_mode_current_index = imgui.combo("##Color mode", image_manipulator_color_mode_current_index, image_manipulator_color_modes)
 
-        #                 if is_clicked:
-        #                     if image_manipulator_color_modes[image_manipulator_color_mode_current_index] == "Original":
-        #                         if type(texture.operation) == asset_manager.ColorManipulationOperation:
-        #                             asset_manager.textures.remove(texture)
-        #                     elif image_manipulator_color_modes[image_manipulator_color_mode_current_index] == "Black and white":
-        #                         gray_image_data = image_processor.change_color_mode(
-        #                             texture.data, 
-        #                             asset_manager.get_texture_width(texture.id),
-        #                             asset_manager.get_texture_height(texture.id),
-        #                             image_processor.ColorMode.BW
-        #                         )
-        #                         gray_texture = asset_manager.create_texture(
-        #                             f"{texture.name} (BW)", 
-        #                             entity.id,
-        #                             gray_image_data, 
-        #                             asset_manager.get_texture_width(texture.id), # Same width as the original texture
-        #                             asset_manager.get_texture_height(texture.id), # Same height as the original texture
-        #                             1
-        #                         )
-        #                         gray_texture.operation = asset_manager.ColorManipulationOperation(
-        #                             gray_texture.id,
-        #                             asset_manager.ColorMode.COLOR_MODE_ORIGINAL,
-        #                             asset_manager.ColorMode.COLOR_MODE_BW
-        #                         )
-        #                         asset_manager.textures.append(gray_texture)
+                        if is_clicked:
+                            if image_manipulator_color_modes[image_manipulator_color_mode_current_index] == "Original":
+                                found_operation = None
 
-        #                 imgui.end_table()
+                                for texture_opration in texture_component.texture_operations:
+                                    if texture_opration.operation_type == image_processor.OperationType.CONVERT_TO_GRAY_SCALE:
+                                        found_operation = texture_opration
+                                        break
+                                
+                                if found_operation is not None:
+                                    for texture in texture_component.textures:
+                                        if texture.id == found_operation.texture_id:
+                                            texture_component.textures.remove(texture)
+                                            texture_component.texture_operations.remove(found_operation)
 
-        #             imgui.tree_pop()
+                            elif image_manipulator_color_modes[image_manipulator_color_mode_current_index] == "Gray scale":
+                                texture_component: ecs.TextureComponent = ecs.get_texture_component(selected_entity_handle)
+                                last_texture: asset_manager.Texture = texture_component.textures[-1]
+                                gray_image_data = image_processor.change_color_mode(
+                                    last_texture.data, 
+                                    asset_manager.get_texture_width(last_texture.id),
+                                    asset_manager.get_texture_height(last_texture.id),
+                                    3
+                                )
+                                gray_texture = asset_manager.create_texture(
+                                    f"{last_texture.name} (BW)", 
+                                    gray_image_data, 
+                                    asset_manager.get_texture_width(last_texture.id), # Same width as the original texture
+                                    asset_manager.get_texture_height(last_texture.id), # Same height as the original texture
+                                    1
+                                )
+                                texture_component.textures.append(gray_texture)
+                                gray_scale_opration = image_processor.Operation(texture_component.entity_handle, gray_texture.id, image_processor.OperationType.CONVERT_TO_GRAY_SCALE)
+                                texture_component.texture_operations.append(gray_scale_opration)                                
+
+                        imgui.end_table()
+
+                    imgui.tree_pop()
                 
-        #         if (asset_manager.ComponentType.IMAGE_TRANSFORM_COMPONENT in entity.components) and \
-        #             imgui.tree_node("Image Transform", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
-        #             if imgui.begin_table("Image Transform", 2):
-        #                 # Row - 1
-        #                 imgui.table_next_row()
+                if ecs.get_image_transform_component(selected_entity_handle) and \
+                    imgui.tree_node("Image Transform", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
+                    if imgui.begin_table("Image Transform", 2):
+                        # Row - 1
+                        imgui.table_next_row()
 
-        #                 imgui.table_next_column()
-        #                 imgui.text("Rotation")
+                        imgui.table_next_column()
+                        imgui.text("Rotation")
 
-        #                 imgui.table_next_column()
-        #                 is_changed, image_transform_rotation = imgui.slider_angle("##Rotation", image_transform_rotation, value_degrees_min=0.0, value_degrees_max=360.0)
+                        imgui.table_next_column()
+                        is_changed, image_transform_rotation = imgui.slider_angle("##Rotation", image_transform_rotation, value_degrees_min=0.0, value_degrees_max=360.0)
 
-        #                 if is_changed:
-        #                     rotated_image_data = image_processor.rotate_image(
-        #                         texture.data,
-        #                         asset_manager.get_texture_width(texture.id),
-        #                         asset_manager.get_texture_height(texture.id),
-        #                         image_transform_rotation,
-        #                         texture.number_of_channels
-        #                     )
+                        if is_changed:
+                            rotated_image_data = image_processor.rotate_image(
+                                last_texture.data,
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                image_transform_rotation,
+                                last_texture.number_of_channels
+                            )
 
-        #                     if type(texture.operation) == asset_manager.RotationOperation:
-        #                         texture.data = rotated_image_data
-        #                     else:
-        #                         rotated_texture = asset_manager.create_texture(
-        #                             f"{texture.name} (Rotated - {image_transform_rotation})",
-        #                             texture.entity_handle,
-        #                             rotated_image_data,
-        #                             asset_manager.get_texture_width(texture.id),
-        #                             asset_manager.get_texture_height(texture.id),
-        #                             texture.number_of_channels
-        #                         ) 
-        #                         rotated_texture.operation = asset_manager.RotationOperation(rotated_texture.id)
-        #                         asset_manager.textures.append(rotated_texture)
+                            found_operation = None
 
-        #                 imgui.end_table()
+                            for operation in texture_component.texture_operations:
+                                if operation.operation_type == image_processor.OperationType.ROTATE:
+                                    found_operation = operation
+                                    break
 
-        #             imgui.tree_pop()
+                            if found_operation is not None:
+                                last_texture.data = rotated_image_data
+                            else:
+                                rotated_texture = asset_manager.create_texture(
+                                    f"{last_texture.name} (Rotated - {image_transform_rotation})",
+                                    rotated_image_data,
+                                    asset_manager.get_texture_width(last_texture.id),
+                                    asset_manager.get_texture_height(last_texture.id),
+                                    last_texture.number_of_channels
+                                ) 
+                                texture_component.textures.append(rotated_texture)
+                                rotated_operation = image_processor.Operation(selected_entity_handle, rotated_texture.id, image_processor.OperationType.ROTATE)
+                                texture_component.texture_operations.append(rotated_operation)
 
-        # if imgui.button("Add Component"):
-        #     imgui.open_popup("Components Menu")
+                        imgui.table_next_row()
+
+                        imgui.table_next_column()
+                        imgui.text("Flip vertically")
+
+                        imgui.table_next_column()
+                        changed, image_flip_vertically_checked = imgui.checkbox("##flip vertically", image_flip_vertically_checked)
+                        
+                        if changed:
+                            flipped_image_data = image_processor.flip_image_vertically(
+                                last_texture.data,
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels
+                            )
+                            flipped_texture = asset_manager.create_texture(
+                                f"{last_texture.name} - Flipped vertically",
+                                flipped_image_data,
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels
+                            )
+                            texture_component.textures.append(flipped_texture)
+                            flipped_vertically_operation = image_processor.Operation(selected_entity_handle, flipped_texture.id, image_processor.OperationType.FLIP_VERTICALLY)
+                            texture_component.texture_operations.append(flipped_vertically_operation)
+
+                        imgui.table_next_row()
+
+                        imgui.table_next_column()
+                        imgui.text("Flip horizontally")
+
+                        imgui.table_next_column()
+                        changed, image_flip_horizontally_checked = imgui.checkbox("##flip horizontally", image_flip_horizontally_checked)
+
+                        if changed:
+                            flipped_image_data = image_processor.flip_image_horizontally(
+                                last_texture.data,
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels
+                            )
+                            flipped_texture = asset_manager.create_texture(
+                                f"{last_texture.name} - Flipped horizontally",
+                                flipped_image_data,
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels
+                            )
+                            texture_component.textures.append(flipped_texture)
+                            flipped_vertically_operation = image_processor.Operation(selected_entity_handle, flipped_texture.id, image_processor.OperationType.FLIP_HORIZONTALLY)
+                            texture_component.texture_operations.append(flipped_vertically_operation)
+
+                        imgui.end_table()
+
+                    imgui.tree_pop()
+
+        if imgui.button("Add Component"):
+            imgui.open_popup("Components Menu")
         
-        # if imgui.begin_popup("Components Menu"):
-        #     imgui.text("Basics")
+        if imgui.begin_popup("Components Menu"):
+            imgui.text("Basics")
 
-        #     color_manipulator_menu_item = imgui.menu_item("Color Manipulator")
+            color_manipulator_menu_item = imgui.menu_item("Color Manipulator")
 
-        #     if color_manipulator_menu_item[0]:
-        #         selected_entity = asset_manager.get_entity(selected_entity_handle)
-        #         selected_entity.components.append(asset_manager.ComponentType.COLOR_MANIPULATOR_COMPONENT)
+            if color_manipulator_menu_item[0]:
+                ecs.add_color_manipulator_component(selected_entity_handle)
             
-        #     image_transform_menu_item = imgui.menu_item("Image Transform")
+            image_transform_menu_item = imgui.menu_item("Image Transform")
 
-        #     if image_transform_menu_item[0]:
-        #         selected_entity = asset_manager.get_entity(selected_entity_handle)
-        #         selected_entity.components.append(asset_manager.ComponentType.IMAGE_TRANSFORM_COMPONENT)
+            if image_transform_menu_item[0]:
+                ecs.add_image_transform_component(selected_entity_handle)
             
-        #     imgui.end_popup()
+            imgui.end_popup()
 
-        # imgui.end()
+        imgui.end()
         ########### Inspector window end ###########
 
         imgui.render()

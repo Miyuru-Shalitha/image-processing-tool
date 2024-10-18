@@ -14,9 +14,11 @@ class Image:
 
 
 class Texture:
-    def __init__(self, id: int, name: str) -> None:
+    def __init__(self, id: int, name: str, data: bytes, number_of_channles: int) -> None:
         self.id: str = id
         self.name: str = name
+        self.data: bytes = data
+        self.number_of_channels: int = number_of_channles
 
 
 images: list[Image] = []
@@ -52,7 +54,7 @@ def create_texture(name: str, data: bytes, width: int, height: int, number_of_ch
     GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, format, width, height, 0, format, GL.GL_UNSIGNED_BYTE, data)
     GL.glGenerateMipmap(GL.GL_TEXTURE_2D)
 
-    texture = Texture(texture_id, name)
+    texture = Texture(texture_id, name, data, number_of_channels)
     textures.append(texture)
 
     return texture
