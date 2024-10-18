@@ -85,6 +85,8 @@ def main():
     image_flip_vertically_checked = False
     image_flip_horizontally_checked = False
 
+    box_filter_kernel_size = (1, 1)
+
 
     while running:
         current_time = time.time()
@@ -379,21 +381,55 @@ def main():
 
                     imgui.tree_pop()
 
+                if ecs.get_box_filter_component(selected_entity_handle) and \
+                    imgui.tree_node("Box Filter", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
+                    if imgui.begin_table("Box Filter", 2):
+                        imgui.table_next_row()
+
+                        imgui.table_next_column()
+                        imgui.text("Kernel")
+
+                        imgui.table_next_column()
+                        kernel_size_changed, box_filter_kernel_size = imgui.input_int2("##Kernel", box_filter_kernel_size[0], box_filter_kernel_size[1])
+
+                        if kernel_size_changed:
+                            box_filtered_image_data = image_processor.box_filter(
+                                last_texture.data, 
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels,
+                                box_filter_kernel_size
+                            )
+                            box_filtered_texture = asset_manager.create_texture(
+                                f"{last_texture.name} - Box filtered ({box_filter_kernel_size[0], box_filter_kernel_size[1]})",
+                                box_filtered_image_data,
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels
+                            )
+                            texture_component.textures.append(box_filtered_texture)
+                            box_filter_operation = image_processor.Operation(selected_entity_handle, box_filtered_texture.id, image_processor.OperationType)
+                            texture_component.texture_operations.append(box_filter_operation)
+
+                        imgui.end_table()
+
+                    imgui.tree_pop()
+
         if imgui.button("Add Component"):
             imgui.open_popup("Components Menu")
         
         if imgui.begin_popup("Components Menu"):
-            imgui.text("Basics")
-
             color_manipulator_menu_item = imgui.menu_item("Color Manipulator")
-
             if color_manipulator_menu_item[0]:
                 ecs.add_color_manipulator_component(selected_entity_handle)
             
             image_transform_menu_item = imgui.menu_item("Image Transform")
-
             if image_transform_menu_item[0]:
                 ecs.add_image_transform_component(selected_entity_handle)
+
+            box_filter_menu_item = imgui.menu_item("Box Filter")
+            if box_filter_menu_item[0]:
+                ecs.add_box_filter_component(selected_entity_handle)
             
             imgui.end_popup()
 

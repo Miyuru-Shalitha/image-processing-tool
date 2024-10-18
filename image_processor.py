@@ -1,3 +1,4 @@
+from typing import Tuple
 import cv2
 import numpy as np
 from enum import Enum
@@ -8,6 +9,7 @@ class OperationType(Enum):
     ROTATE = 1
     FLIP_VERTICALLY = 2
     FLIP_HORIZONTALLY = 3
+    BOX_FILTER = 4
 
 
 class Operation:
@@ -49,3 +51,11 @@ def flip_image_vertically(image_data: bytes, width: int, height: int, number_of_
     flipped_image = cv2.flip(image_array, 0)
 
     return flipped_image
+
+
+def box_filter(image_data: bytes, width: int, height: int, number_of_channels: int, kernel_size: Tuple[int, int]):
+    image_array = np.frombuffer(image_data, dtype=np.uint8)
+    image_array = image_array.reshape((height, width, number_of_channels))
+    filtered_image = cv2.boxFilter(image_array, -1, kernel_size)
+
+    return filtered_image

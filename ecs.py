@@ -31,11 +31,18 @@ class ImageTransformComponent:
         self.entity_handle: int = entity_handle
 
 
+class BoxFilterComponent:
+    def __init__(self, entity_handle: int, kernel_size: int):
+        self.entity_handle = entity_handle
+        self.kernel_size = kernel_size
+
+
 entities: list[Entity] = []
 transform_components: list[TransformComponent] = []
 texture_components: list[TextureComponent] = []
 color_manipulator_components: list[ColorManipulatorComponent] = []
 image_transform_components: list[ImageTransformComponent] = []
+box_filter_components: list[BoxFilterComponent] = []
 
 entity_handle_count_accumilator: int = -1
 
@@ -77,6 +84,13 @@ def add_color_manipulator_component(entity_handle: int) -> ColorManipulatorCompo
     return color_manipulator_component
 
 
+def add_box_filter_component(entity_handle: int) -> BoxFilterComponent:
+    box_filter_component = BoxFilterComponent(entity_handle, (1, 1))
+    box_filter_components.append(box_filter_component)
+
+    return box_filter_component
+
+
 def get_transform_component(entity_handle: int) -> TransformComponent | None:
     for transform_component in transform_components:
         if transform_component.entity_handle == entity_handle:
@@ -105,5 +119,13 @@ def get_image_transform_component(entity_handle: int) -> ImageTransformComponent
     for image_transform_component in image_transform_components:
         if image_transform_component.entity_handle == entity_handle:
             return image_transform_component
+    
+    return None
+
+
+def get_box_filter_component(entity_handle: int) -> BoxFilterComponent | None:
+    for box_filter_component in box_filter_components:
+        if box_filter_component.entity_handle == entity_handle:
+            return box_filter_component
     
     return None
