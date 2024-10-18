@@ -79,6 +79,8 @@ def main():
     image_manipulator_color_mode_current_index = 0
     image_manipulator_color_modes = ["Original", "Black and white"]
 
+    image_transform_rotation = 0
+
 
     while running:
         current_time = time.time()
@@ -223,7 +225,8 @@ def main():
 
                         if is_clicked:
                             if image_manipulator_color_modes[image_manipulator_color_mode_current_index] == "Original":
-                                asset_manager.textures.pop() # Add an id for each operation(texture) and check the item and remove it from textures :)
+                                if type(texture.operation) == asset_manager.ColorManipulationOperation:
+                                    asset_manager.textures.remove(texture)
                             elif image_manipulator_color_modes[image_manipulator_color_mode_current_index] == "Black and white":
                                 gray_image_data = image_processor.change_color_mode(
                                     texture.data, 
@@ -238,6 +241,11 @@ def main():
                                     asset_manager.get_texture_width(texture.id), # Same width as the original texture
                                     asset_manager.get_texture_height(texture.id), # Same height as the original texture
                                     1
+                                )
+                                gray_texture.operation = asset_manager.ColorManipulationOperation(
+                                    gray_texture.id,
+                                    asset_manager.ColorMode.COLOR_MODE_ORIGINAL,
+                                    asset_manager.ColorMode.COLOR_MODE_BW
                                 )
                                 asset_manager.textures.append(gray_texture)
 
@@ -255,29 +263,54 @@ def main():
                         imgui.text("Rotation")
 
                         imgui.table_next_column()
-                        imgui.text("0")
+                        is_changed, image_transform_rotation = imgui.slider_angle("##Rotation", image_transform_rotation, value_degrees_min=0.0, value_degrees_max=360.0)
+
+                        if is_changed:
+                            rotated_image_data = image_processor.rotate_image(
+                                texture.data,
+                                asset_manager.get_texture_width(texture.id),
+                                asset_manager.get_texture_height(texture.id),
+                                image_transform_rotation,
+                                texture.number_of_channels
+                            )
+
+                            if type(texture.operation) == asset_manager.RotationOperation:
+                                texture.data = rotated_image_data
+                            else:
+                                rotated_texture = asset_manager.create_texture(
+                                    f"{texture.name} (Rotated - {image_transform_rotation})",
+                                    texture.entity_handle,
+                                    rotated_image_data,
+                                    asset_manager.get_texture_width(texture.id),
+                                    asset_manager.get_texture_height(texture.id),
+                                    texture.number_of_channels
+                                ) 
+                                rotated_texture.operation = asset_manager.RotationOperation(rotated_texture.id)
+                                asset_manager.textures.append(rotated_texture)
 
                         imgui.end_table()
 
                     imgui.tree_pop()
 
-            if imgui.button("Add Component"):
-                imgui.open_popup("Components Menu")
+        if imgui.button("Add Component"):
+            imgui.open_popup("Components Menu")
+        
+        if imgui.begin_popup("Components Menu"):
+            imgui.text("Basics")
+
+            color_manipulator_menu_item = imgui.menu_item("Color Manipulator")
+
+            if color_manipulator_menu_item[0]:
+                selected_entity = asset_manager.get_entity(selected_entity_handle)
+                selected_entity.components.append(asset_manager.ComponentType.COLOR_MANIPULATOR_COMPONENT)
             
-            if imgui.begin_popup("Components Menu"):
-                imgui.text("Basics")
+            image_transform_menu_item = imgui.menu_item("Image Transform")
 
-                color_manipulator_menu_item = imgui.menu_item("Color Manipulator")
-
-                if color_manipulator_menu_item[0]:
-                    entity.components.append(asset_manager.ComponentType.COLOR_MANIPULATOR_COMPONENT)
-                
-                image_transform_menu_item = imgui.menu_item("Image Transform")
-
-                if image_transform_menu_item[0]:
-                    entity.components.append(asset_manager.ComponentType.IMAGE_TRANSFORM_COMPONENT)
-                
-                imgui.end_popup()
+            if image_transform_menu_item[0]:
+                selected_entity = asset_manager.get_entity(selected_entity_handle)
+                selected_entity.components.append(asset_manager.ComponentType.IMAGE_TRANSFORM_COMPONENT)
+            
+            imgui.end_popup()
 
         imgui.end()
         ########### Inspector window end ###########

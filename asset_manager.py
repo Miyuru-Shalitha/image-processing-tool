@@ -15,6 +15,23 @@ class Entity:
         self.components: list[ComponentType] = []
 
 
+class ColorMode(Enum):
+    COLOR_MODE_ORIGINAL = 0,
+    COLOR_MODE_BW = 1
+
+
+class ColorManipulationOperation:
+    def __init__(self, texture_handle, previouse_mode, new_mode):
+        self.texture_handle = texture_handle
+        self.previouse_mode = previouse_mode
+        self.new_mode = new_mode
+
+
+class RotationOperation:
+    def __init__(self, texture_handle):
+        self.texture_handle = texture_handle
+
+
 class Texture:
     def __init__(self, name, id, entity_handle, data, number_of_channels):
         self.name = name
@@ -23,6 +40,7 @@ class Texture:
         self.data = data
         self.number_of_channels = number_of_channels
         self.position = glm.vec2(0.0, 0.0)
+        self.operation = None
 
 
 entity_handle_accumilator = -1
@@ -35,6 +53,14 @@ def create_entity():
 
     entity_handle_accumilator += 1
     return Entity(entity_handle_accumilator)
+
+
+def get_entity(entity_handle):
+    for entity in entities:
+        if entity.id == entity_handle:
+            return entity
+    
+    return None
 
 
 def create_texture(name, entity_handle, data, width, height, number_of_channels) -> Texture:
