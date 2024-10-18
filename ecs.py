@@ -32,9 +32,16 @@ class ImageTransformComponent:
 
 
 class BoxFilterComponent:
-    def __init__(self, entity_handle: int, kernel_size: int):
-        self.entity_handle = entity_handle
-        self.kernel_size = kernel_size
+    def __init__(self, entity_handle: int, kernel_size: tuple[int, int]):
+        self.entity_handle: int = entity_handle
+        self.kernel_size: tuple[int, int] = kernel_size
+    
+
+class GaussianFilterComponent:
+    def __init__(self, entity_handle: int, kernel_size: int, sigma_x: float):
+        self.entity_handle: int = entity_handle
+        self.kernel_size: tuple[int, int] = kernel_size
+        sigma_x: float = sigma_x
 
 
 entities: list[Entity] = []
@@ -43,6 +50,7 @@ texture_components: list[TextureComponent] = []
 color_manipulator_components: list[ColorManipulatorComponent] = []
 image_transform_components: list[ImageTransformComponent] = []
 box_filter_components: list[BoxFilterComponent] = []
+gaussian_filter_components: list[GaussianFilterComponent] = []
 
 entity_handle_count_accumilator: int = -1
 
@@ -91,6 +99,13 @@ def add_box_filter_component(entity_handle: int) -> BoxFilterComponent:
     return box_filter_component
 
 
+def add_gaussian_filter_component(entity_handle: int) -> GaussianFilterComponent:
+    gaussian_filter_component = GaussianFilterComponent(entity_handle, (1, 1), 1.0)
+    gaussian_filter_components.append(gaussian_filter_component)
+
+    return gaussian_filter_component
+
+
 def get_transform_component(entity_handle: int) -> TransformComponent | None:
     for transform_component in transform_components:
         if transform_component.entity_handle == entity_handle:
@@ -127,5 +142,13 @@ def get_box_filter_component(entity_handle: int) -> BoxFilterComponent | None:
     for box_filter_component in box_filter_components:
         if box_filter_component.entity_handle == entity_handle:
             return box_filter_component
+    
+    return None
+
+
+def get_gaussian_filter_component(entity_handle: int) -> GaussianFilterComponent | None:
+    for gaussian_filter_component in gaussian_filter_components:
+        if gaussian_filter_component.entity_handle == entity_handle:
+            return gaussian_filter_component
     
     return None

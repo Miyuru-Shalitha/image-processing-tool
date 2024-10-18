@@ -1,4 +1,3 @@
-from typing import Tuple
 import cv2
 import numpy as np
 from enum import Enum
@@ -10,6 +9,7 @@ class OperationType(Enum):
     FLIP_VERTICALLY = 2
     FLIP_HORIZONTALLY = 3
     BOX_FILTER = 4
+    GAUSSIAN_FILTER = 5
 
 
 class Operation:
@@ -53,9 +53,17 @@ def flip_image_vertically(image_data: bytes, width: int, height: int, number_of_
     return flipped_image
 
 
-def box_filter(image_data: bytes, width: int, height: int, number_of_channels: int, kernel_size: Tuple[int, int]):
+def box_filter(image_data: bytes, width: int, height: int, number_of_channels: int, kernel_size: tuple[int, int]):
     image_array = np.frombuffer(image_data, dtype=np.uint8)
     image_array = image_array.reshape((height, width, number_of_channels))
     filtered_image = cv2.boxFilter(image_array, -1, kernel_size)
 
     return filtered_image
+
+
+def gaussian_filter(image_data: bytes, width: int, height: int, number_of_channels: int, kernel_size: tuple[int, int], sigma_x: float):
+    image_array = np.frombuffer(image_data, dtype=np.uint8)
+    image_array = image_array.reshape((height, width, number_of_channels))
+    blurred_image = cv2.GaussianBlur(image_array, kernel_size, sigma_x)
+
+    return blurred_image

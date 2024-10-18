@@ -87,6 +87,9 @@ def main():
 
     box_filter_kernel_size = (1, 1)
 
+    gaussian_filter_kernel_size = (1, 1)
+    gaussian_filter_sigma_x = 1.0
+
 
     while running:
         current_time = time.time()
@@ -408,8 +411,70 @@ def main():
                                 last_texture.number_of_channels
                             )
                             texture_component.textures.append(box_filtered_texture)
-                            box_filter_operation = image_processor.Operation(selected_entity_handle, box_filtered_texture.id, image_processor.OperationType)
+                            box_filter_operation = image_processor.Operation(selected_entity_handle, box_filtered_texture.id, image_processor.OperationType.BOX_FILTER)
                             texture_component.texture_operations.append(box_filter_operation)
+
+                        imgui.end_table()
+
+                    
+                if ecs.get_gaussian_filter_component(selected_entity_handle) and \
+                    imgui.tree_node("Gaussian Filter", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
+                    if imgui.begin_table("Gaussian Filter", 2):
+                        imgui.table_next_row()
+
+                        imgui.table_next_column()
+                        imgui.text("Kernel")
+
+                        imgui.table_next_column()
+                        kernel_size_changed, gaussian_filter_kernel_size = imgui.input_int2("##Kernel", gaussian_filter_kernel_size[0], gaussian_filter_kernel_size[1])
+
+                        if kernel_size_changed:
+                            gaussian_filtered_image_data = image_processor.gaussian_filter(
+                                last_texture.data, 
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels,
+                                gaussian_filter_kernel_size,
+                                gaussian_filter_sigma_x
+                            )
+                            gaussian_filtered_texture = asset_manager.create_texture(
+                                f"{last_texture.name} - Gaussian filtered ({gaussian_filter_kernel_size[0]}, {gaussian_filter_kernel_size[1]}, {gaussian_filter_sigma_x})",
+                                gaussian_filtered_image_data,
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels
+                            )
+                            texture_component.textures.append(gaussian_filtered_texture)
+                            gaussian_filter_operation = image_processor.Operation(selected_entity_handle, gaussian_filtered_texture.id, image_processor.OperationType.GAUSSIAN_FILTER)
+                            texture_component.texture_operations.append(gaussian_filter_operation)
+                        
+                        imgui.table_next_row()
+
+                        imgui.table_next_column()
+                        imgui.text("Sigma X")
+
+                        imgui.table_next_column()
+                        sigma_x_changed, gaussian_filter_sigma_x = imgui.input_int("##Sigma X", gaussian_filter_sigma_x)
+
+                        if sigma_x_changed:
+                            gaussian_filtered_image_data = image_processor.gaussian_filter(
+                                last_texture.data, 
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels,
+                                gaussian_filter_kernel_size,
+                                gaussian_filter_sigma_x
+                            )
+                            gaussian_filtered_texture = asset_manager.create_texture(
+                                f"{last_texture.name} - Gaussian filtered ({gaussian_filter_kernel_size[0]}, {gaussian_filter_kernel_size[1]}, {gaussian_filter_sigma_x})",
+                                gaussian_filtered_image_data,
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels
+                            )
+                            texture_component.textures.append(gaussian_filtered_texture)
+                            gaussian_filter_operation = image_processor.Operation(selected_entity_handle, gaussian_filtered_texture.id, image_processor.OperationType.GAUSSIAN_FILTER)
+                            texture_component.texture_operations.append(gaussian_filter_operation)
 
                         imgui.end_table()
 
@@ -430,6 +495,10 @@ def main():
             box_filter_menu_item = imgui.menu_item("Box Filter")
             if box_filter_menu_item[0]:
                 ecs.add_box_filter_component(selected_entity_handle)
+            
+            gaussian_filter_menu_item = imgui.menu_item("Gaussian Filter")
+            if gaussian_filter_menu_item[0]:
+                ecs.add_gaussian_filter_component(selected_entity_handle)
             
             imgui.end_popup()
 
