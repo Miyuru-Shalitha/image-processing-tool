@@ -161,7 +161,7 @@ def main():
 
         for entity in asset_manager.entities:
             texture = asset_manager.get_textures(entity.id)[0]
-            _, is_selected = imgui.selectable(texture.name, texture.id == selected_entity_handle)
+            _, is_selected = imgui.selectable(texture.name, entity.id == selected_entity_handle)
 
             if is_selected:
                 selected_entity_handle = entity.id
