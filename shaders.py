@@ -24,8 +24,14 @@ in vec2 v_tex_coords;
 out vec4 frag_color;
 
 uniform sampler2D diffuse;
+uniform int number_of_channels;
 
 void main() {
-    frag_color = texture(diffuse, v_tex_coords);
+    if (number_of_channels == 3) {
+        frag_color = texture(diffuse, v_tex_coords);
+    } else {
+        float gray_value = texture(diffuse, v_tex_coords).r;
+        frag_color = vec4(gray_value, gray_value, gray_value, 1.0);
+    }
 }
 """

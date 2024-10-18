@@ -32,16 +32,27 @@ class ImageTransformComponent:
 
 
 class BoxFilterComponent:
-    def __init__(self, entity_handle: int, kernel_size: tuple[int, int]):
+    def __init__(self, entity_handle: int, kernel_size: tuple[int, int]) -> None:
         self.entity_handle: int = entity_handle
         self.kernel_size: tuple[int, int] = kernel_size
     
 
 class GaussianFilterComponent:
-    def __init__(self, entity_handle: int, kernel_size: int, sigma_x: float):
+    def __init__(self, entity_handle: int, kernel_size: int, sigma_x: float) -> None:
         self.entity_handle: int = entity_handle
         self.kernel_size: tuple[int, int] = kernel_size
         sigma_x: float = sigma_x
+
+
+class EdgeDetectionComponent:
+    def __init__(self, entity_handle: int, kernel_size: tuple[int, int]) -> None:
+        self.entity_handle = entity_handle
+        self.kernel_size: tuple[int, int] = kernel_size
+
+
+class DenosingComponent:
+    def __init__(self, entity_handle: int) -> None:
+        self.entity_handle: int = entity_handle
 
 
 entities: list[Entity] = []
@@ -51,6 +62,8 @@ color_manipulator_components: list[ColorManipulatorComponent] = []
 image_transform_components: list[ImageTransformComponent] = []
 box_filter_components: list[BoxFilterComponent] = []
 gaussian_filter_components: list[GaussianFilterComponent] = []
+edge_detection_components: list[EdgeDetectionComponent] = []
+denoising_components: list[DenosingComponent] = []
 
 entity_handle_count_accumilator: int = -1
 
@@ -106,6 +119,20 @@ def add_gaussian_filter_component(entity_handle: int) -> GaussianFilterComponent
     return gaussian_filter_component
 
 
+def add_edge_detection_component(entity_handle: int) -> EdgeDetectionComponent:
+    edge_detection_component = EdgeDetectionComponent(entity_handle, (1, 1))
+    edge_detection_components.append(edge_detection_component)
+
+    return edge_detection_component
+
+
+def add_denoising_component(entity_handle: int) -> DenosingComponent:
+    denoising_component = DenosingComponent(entity_handle)
+    denoising_components.append(denoising_component)
+
+    return denoising_component
+
+
 def get_transform_component(entity_handle: int) -> TransformComponent | None:
     for transform_component in transform_components:
         if transform_component.entity_handle == entity_handle:
@@ -150,5 +177,21 @@ def get_gaussian_filter_component(entity_handle: int) -> GaussianFilterComponent
     for gaussian_filter_component in gaussian_filter_components:
         if gaussian_filter_component.entity_handle == entity_handle:
             return gaussian_filter_component
+    
+    return None
+
+
+def get_edge_detection_component(entity_handle: int) -> EdgeDetectionComponent | None:
+    for edge_detection_component in edge_detection_components:
+        if edge_detection_component.entity_handle == entity_handle:
+            return edge_detection_component
+    
+    return None
+
+
+def get_denoising_component(entity_handle: int) -> DenosingComponent | None:
+    for denoising_component in denoising_components:
+        if denoising_component.entity_handle == entity_handle:
+            return denoising_component
     
     return None

@@ -8,7 +8,7 @@ import numpy as np
 import ecs
 import asset_manager
 from imgui.integrations.pygame import PygameRenderer
-from OpenGL.GL import *
+from OpenGL import GL
 from OpenGL.GL.shaders import compileProgram, compileShader 
 from shaders import vertex_shader_source, fragment_shader_source
 from tkinter import filedialog
@@ -38,31 +38,31 @@ def main():
     io.fonts.add_font_from_file_ttf('resources/fonts/Open_Sans/static/OpenSans-Regular.ttf', 18)
     renderer = PygameRenderer()
 
-    vertex_array = glGenVertexArrays(1)
-    glBindVertexArray(vertex_array)
+    vertex_array = GL.glGenVertexArrays(1)
+    GL.glBindVertexArray(vertex_array)
 
-    vertex_buffer = glGenBuffers(1)
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer)
-    glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+    vertex_buffer = GL.glGenBuffers(1)
+    GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vertex_buffer)
+    GL.glBufferData(GL.GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL.GL_STATIC_DRAW)
 
-    index_buffer = glGenBuffers(1)
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer)
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
+    index_buffer = GL.glGenBuffers(1)
+    GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, index_buffer)
+    GL.glBufferData(GL.GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL.GL_STATIC_DRAW)
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * vertices.itemsize, None)
-    glEnableVertexAttribArray(0)
+    GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 5 * vertices.itemsize, None)
+    GL.glEnableVertexAttribArray(0)
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * vertices.itemsize, ctypes.c_void_p(3 * vertices.itemsize))
-    glEnableVertexAttribArray(1)
+    GL.glVertexAttribPointer(1, 3, GL.GL_FLOAT, GL.GL_FALSE, 5 * vertices.itemsize, GL.ctypes.c_void_p(3 * vertices.itemsize))
+    GL.glEnableVertexAttribArray(1)
 
-    glBindVertexArray(0)
-    glBindBuffer(GL_ARRAY_BUFFER, 0)
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
-    glDisableVertexAttribArray(0)
-    glDisableVertexAttribArray(1)
+    GL.glBindVertexArray(0)
+    GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+    GL.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, 0)
+    GL.glDisableVertexAttribArray(0)
+    GL.glDisableVertexAttribArray(1)
 
-    vertex_shader = compileShader(vertex_shader_source, GL_VERTEX_SHADER)
-    fragment_shader = compileShader(fragment_shader_source, GL_FRAGMENT_SHADER)
+    vertex_shader = compileShader(vertex_shader_source, GL.GL_VERTEX_SHADER)
+    fragment_shader = compileShader(fragment_shader_source, GL.GL_FRAGMENT_SHADER)
     shader_program = compileProgram(vertex_shader, fragment_shader)
 
     running = True
@@ -89,6 +89,8 @@ def main():
 
     gaussian_filter_kernel_size = (1, 1)
     gaussian_filter_sigma_x = 1.0
+
+    edge_detection_kernel_size = (1, 1)
 
 
     while running:
@@ -121,9 +123,9 @@ def main():
             camera_position.z += io.mouse_wheel * dt * mouse_scroll_sensitivity
 
         window_size = pygame.display.get_window_size()
-        glViewport(0, 0, window_size[0], window_size[1])
-        glClearColor(0.3, 0.3, 0.3, 1.0)
-        glClear(GL_COLOR_BUFFER_BIT)
+        GL.glViewport(0, 0, window_size[0], window_size[1])
+        GL.glClearColor(0.3, 0.3, 0.3, 1.0)
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
         view = glm.mat4(1.0)
         view = glm.translate(view, camera_position)
@@ -133,7 +135,7 @@ def main():
             transform_component: ecs.TransformComponent = ecs.get_transform_component(entity.id)
             texture_component: ecs.TextureComponent = ecs.get_texture_component(entity.id)
             texture: asset_manager.Texture = texture_component.textures[-1]
-            glUseProgram(shader_program)
+            GL.glUseProgram(shader_program)
             
             model = glm.mat4(1.0)
             model = glm.translate(model, glm.vec3(transform_component.position, 0.0))
@@ -146,22 +148,24 @@ def main():
                 )
             )
             
-            model_location = glGetUniformLocation(shader_program, "model")
-            view_location = glGetUniformLocation(shader_program, "view")
-            projection_location = glGetUniformLocation(shader_program, "projection")
-            texture_location = glGetUniformLocation(shader_program, "diffuse")
+            model_location = GL.glGetUniformLocation(shader_program, "model")
+            view_location = GL.glGetUniformLocation(shader_program, "view")
+            projection_location = GL.glGetUniformLocation(shader_program, "projection")
+            texture_location = GL.glGetUniformLocation(shader_program, "diffuse")
+            number_of_channel_location = GL.glGetUniformLocation(shader_program, "number_of_channels")
             
-            glUniformMatrix4fv(model_location, 1, GL_FALSE, glm.value_ptr(model))
-            glUniformMatrix4fv(view_location, 1, GL_FALSE, glm.value_ptr(view))
-            glUniformMatrix4fv(projection_location, 1, GL_FALSE, glm.value_ptr(projection))
-            glActiveTexture(GL_TEXTURE0)
-            glBindTexture(GL_TEXTURE_2D, texture.id)
-            glUniform1i(texture_location, 0)
+            GL.glUniformMatrix4fv(model_location, 1, GL.GL_FALSE, glm.value_ptr(model))
+            GL.glUniformMatrix4fv(view_location, 1, GL.GL_FALSE, glm.value_ptr(view))
+            GL.glUniformMatrix4fv(projection_location, 1, GL.GL_FALSE, glm.value_ptr(projection))
+            GL.glUniform1i(number_of_channel_location, texture.number_of_channels)
+            GL.glActiveTexture(GL.GL_TEXTURE0)
+            GL.glBindTexture(GL.GL_TEXTURE_2D, texture.id)
+            GL.glUniform1i(texture_location, 0)
 
-            glBindVertexArray(vertex_array)
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
-            glBindVertexArray(0)
-            glUseProgram(0)
+            GL.glBindVertexArray(vertex_array)
+            GL.glDrawElements(GL.GL_TRIANGLES, 6, GL.GL_UNSIGNED_INT, None)
+            GL.glBindVertexArray(0)
+            GL.glUseProgram(0)
 
         io.display_size = pygame.display.get_window_size()
         renderer.process_inputs()
@@ -332,7 +336,7 @@ def main():
 
                         imgui.table_next_column()
                         imgui.text("Flip vertically")
-
+                        
                         imgui.table_next_column()
                         changed, image_flip_vertically_checked = imgui.checkbox("##flip vertically", image_flip_vertically_checked)
                         
@@ -416,6 +420,7 @@ def main():
 
                         imgui.end_table()
 
+                    imgui.tree_pop()
                     
                 if ecs.get_gaussian_filter_component(selected_entity_handle) and \
                     imgui.tree_node("Gaussian Filter", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
@@ -477,6 +482,71 @@ def main():
                             texture_component.texture_operations.append(gaussian_filter_operation)
 
                         imgui.end_table()
+                    
+                    imgui.tree_pop()
+
+                if ecs.get_edge_detection_component(selected_entity_handle) and \
+                    imgui.tree_node("Edge Detection", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
+                    if imgui.begin_table("Edge Detection", 2):
+                        imgui.table_next_row()
+
+                        imgui.table_next_column()
+                        imgui.text("Kernel")
+
+                        imgui.table_next_column()
+                        kernel_size_changed, edge_detection_kernel_size = imgui.input_int2("##Kernel", edge_detection_kernel_size[0], edge_detection_kernel_size[1])
+
+                        if kernel_size_changed:
+                            edge_detected_image_data = image_processor.sobel_edge_ditection(
+                                last_texture.data, 
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels
+                            )
+                            edge_detected_texture = asset_manager.create_texture(
+                                f"{last_texture.name} - Edget detection ({edge_detection_kernel_size[0]}, {edge_detection_kernel_size[1]})",
+                                edge_detected_image_data,
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                1 # Image is in gray scale
+                            )
+                            texture_component.textures.append(edge_detected_texture)
+                            edge_detection_operation = image_processor.Operation(selected_entity_handle, edge_detected_texture.id, image_processor.OperationType.EDGE_DETECTION)
+                            texture_component.texture_operations.append(edge_detection_operation)
+
+                        imgui.end_table()
+
+                    imgui.tree_pop()
+
+                if ecs.get_denoising_component(selected_entity_handle) and \
+                    imgui.tree_node("Denoising", imgui.TREE_NODE_DEFAULT_OPEN | imgui.TREE_NODE_SPAN_AVAILABLE_WIDTH):
+                    if imgui.begin_table("Denoising", 2):
+                        imgui.table_next_row()
+
+                        imgui.table_next_column()
+                        imgui.text("Denoise")
+
+                        imgui.table_next_column()
+                        if imgui.button("Denoise"):
+
+                            denoised_image_data = image_processor.denoise_image(
+                                last_texture.data,
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels
+                            )
+                            denoised_texture = asset_manager.create_texture(
+                                f"{last_texture.name} - (Denoise)",
+                                denoised_image_data,
+                                asset_manager.get_texture_width(last_texture.id),
+                                asset_manager.get_texture_height(last_texture.id),
+                                last_texture.number_of_channels 
+                            )
+                            texture_component.textures.append(denoised_texture)
+                            denoised_operation = image_processor.Operation(selected_entity_handle, denoised_texture.id, image_processor.OperationType.DENOISING)
+                            texture_component.texture_operations.append(denoised_operation)
+
+                        imgui.end_table()
 
                     imgui.tree_pop()
 
@@ -499,6 +569,14 @@ def main():
             gaussian_filter_menu_item = imgui.menu_item("Gaussian Filter")
             if gaussian_filter_menu_item[0]:
                 ecs.add_gaussian_filter_component(selected_entity_handle)
+            
+            edge_detection_menu_item = imgui.menu_item("Edge Detection")
+            if edge_detection_menu_item[0]:
+                ecs.add_edge_detection_component(selected_entity_handle)            
+
+            denoising_menu_item = imgui.menu_item("Denoising")
+            if denoising_menu_item[0]:
+                ecs.add_denoising_component(selected_entity_handle)
             
             imgui.end_popup()
 
